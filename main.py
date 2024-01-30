@@ -4,10 +4,25 @@ from collections import UserDict
 
 class Field:
     def __init__(self, value):
-        self.value = value
+        if not self.is_valid(value):
+            raise ValueError("Invalid value")
+        self.__value = value
 
     def __str__(self):
-        return str(self.value)
+        return str(self.__value)
+
+    def is_valid(self, value):
+        return True
+
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, value):
+        if not self.is_valid(value):
+            raise ValueError("Invalid value")
+        self.__value = value
 
 
 class Name(Field):
@@ -15,48 +30,24 @@ class Name(Field):
 
 
 class Phone(Field):
+    def is_valid(self, value):
+        return value is not None and len(value) == 10 and value.isdigit()
+
     def __init__(self, value):
-        if not self.is_valid_phone(value):
-            raise ValueError
         super().__init__(value)
-
-    @staticmethod
-    def is_valid_phone(value):
-        return len(value) == 10 and value.isdigit()
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, new_value):
-        if not self.is_valid_phone(new_value):
-            raise ValueError
-        self._value = new_value
 
 
 class Birthday(Field):
     def __init__(self, value=None):
-        if value and not self.is_valid_birthday(value):
-            raise ValueError
+        if value:
+            self._validate_birthday_format(value)
         super().__init__(value)
 
-    @staticmethod
-    def _validate_birthday_format(value):
+    def _validate_birthday_format(self, value):
         try:
             datetime.strptime(value, '%Y-%m-%d')
         except ValueError:
             raise ValueError
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, new_value):
-        if new_value and not self.is_valid_birthday(new_value):
-            raise ValueError
-        self._value = new_value
 
 
 class Record:
@@ -75,13 +66,11 @@ class Record:
                 break
 
     def edit_phone(self, old_phone, new_phone):
-        if not Phone.is_valid_phone(new_phone):
-            raise ValueError
-        phone_to_edit = self.find_phone(old_phone)
-        if phone_to_edit:
-            phone_to_edit.value = new_phone
-        else:
-            raise ValueError
+        for phone in self.phones:
+            if phone.value == old_phone:
+                phone.value = new_phone
+                return
+        raise ValueError
 
     def find_phone(self, phone):
         return next((p for p in self.phones if p.value == phone), None)
@@ -121,6 +110,5 @@ class AddressBook(UserDict):
         while current_index < num_records:
             yield records[current_index:current_index + part_record]
             current_index += part_record
-
 
 
