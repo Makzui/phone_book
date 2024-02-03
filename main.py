@@ -1,6 +1,6 @@
 from datetime import datetime
 from collections import UserDict
-
+import json
 
 class Field:
     def __init__(self, value):
@@ -111,4 +111,33 @@ class AddressBook(UserDict):
             yield records[current_index:current_index + part_record]
             current_index += part_record
 
+    def save_to_json(self, filename):
+        with open(filename, "w") as fh:
+            json.dump(list(self.data.values()), fh, indent=4, default=lambda x: x.__dict__)
+
+    def load_from_json(self, filename):
+        with open(filename, "r") as fh:
+            data = json.load(fh)
+            for item in data:
+                record = Record(item['name'])
+                for phone in item['phones']:
+                    record.add_phone(phone)
+                record.birthday = Birthday(item['birthday'])
+                self.add_record(record)
+
+    def search_by_name(self, search_string):
+        results = []
+        for record in self.data.values():
+            if search_string.lower() in record.name.value.lower():
+                results.append(record)
+        return results
+
+    def search_by_phone(self, search_string):
+        results = []
+        for record in self.data.values():
+            for phone in record.phones:
+                if search_string in phone.value:
+                    results.append(record)
+                    break  
+        return results
 
